@@ -1,0 +1,128 @@
+---
+title: "STAC33assignment3"
+author: ""
+format: html
+editor: visual
+---
+
+## **Question 1**
+
+```{r}
+library(tidyverse)
+```
+
+The birth, death and infant mortality rates for 97 countries are recorded. The data can be found [here](https://ritsokiguess.site/datafiles/birthrate.txt).
+
+In the data set, you will find the following variables:
+
+-   `birth` birth rates
+
+-   `death` death rates
+
+-   `infant` infant mortality rates
+
+-   `country`
+
+##### **a) (2 points) Read in and display the data.**
+
+```{r}
+birthrate <- read_table("C:/Users/wangm/OneDrive/桌面/birthdayrate.txt")
+birthrate 
+```
+
+##### **b) (2 points) Draw an appropriate plot of the birth rates for all countries.**
+
+```{r}
+ggplot(birthrate, aes(x=birth))+
+  geom_histogram(bins=10)
+```
+
+##### **c) (2 points) To obtain a confidence interval for the mean birth rate (for all countries), would you feel comfortable using a t-test, based on what you have seen so far? Explain briefly.**
+
+As we can seen histogram from b), it doesn't show an obvious shape of normal distribution, so it is not normal distribution. And we could examine the distribution of the sample mean because it has enough sample size up to 97.
+
+##### **d) (4 points) Obtain a bootstrap sampling distribution of the sample mean for these data. What do you think about using `t.test` now (to obtain a confidence interval for the mean birth rate)? Explain briefly.**
+
+```{r}
+set.seed(123)
+
+bootstrap_mean <- function(data, size) {
+  sample_data <- sample(data, size, replace = TRUE)
+  mean(sample_data)
+}
+
+bootstrap_means <- replicate(10000, bootstrap_mean(birthrate$birth, length(birthrate$birth)))
+
+library(ggplot2)
+ggplot(data.frame(bootstrap_means), aes(x = bootstrap_means)) +
+  geom_histogram(bins = 20, fill = "gray", color = "black") +
+  labs(title = "Bootstrap Distribution of Mean Birth Rates",
+       x = "Mean Birth Rate",
+       y = "Frequency")
+
+```
+
+It shows that the bootstrap distribution of the sample mean is sufficiently normal. Therefore, using the T test is good.
+
+## **Question 2**
+
+##### **a) (2 points) Display a random sample of size 15 from an exponential distribution with mean 5.**
+
+```{r}
+AAA <- rexp(n = 15, rate = 1/5)
+print(AAA)
+```
+
+##### **b) (4 points) For samples of size 30 from an exponential distribution with mean 5, simulate the sampling distribution of the sample mean. Does your distribution look close to normal in shape?**
+
+```{r}
+exponential_means <- replicate(10000, mean(rexp(30, 1/5)))
+ggplot(data.frame(means = exponential_means), aes(x = means)) +
+  geom_histogram(bins = 20, fill = "gray", color = "black") +
+  ggtitle("Sampling Distribution of Mean from Exponential Distribution")
+```
+
+It closed to normal distribution in shape.
+
+##### **c) (3 points) By simulation, estimate the power of the t-test to reject the null hypothesis that the population mean is 5, in favour of a two-sided alternative, when the population has an exponential distribution and its mean is actually 7, using a sample size of 30.**
+
+```{r}
+set.seed(233)
+
+results <- replicate(10000, {
+  sample_data <- rexp(30, 1/7) 
+  test_result <- t.test(sample_data, mu = 5, alternative = "two.sided") 
+  test_result$p.value  
+})
+
+p_value_summary <- data.frame(
+  'p_value_less_than_0.05' = results <= 0.05
+)
+
+print(table(p_value_summary))
+
+
+```
+
+2610/10000=0.261
+
+##### **d) (2 points) Given that the standard deviation of an exponential distribution is equal to the mean, what sample size do we need, *for the scenario discussed in c)*, to get a power of 0.75?**
+
+```{r}
+required_sample_size <- power.t.test(delta = 2, sd = 5, sig.level = 0.05, power = 0.75, type = "one.sample", alternative = "two.sided")
+print(required_sample_size)
+
+set.seed(233)
+
+simulated_results <- replicate(10000, {
+  sampled_data <- rexp(required_sample_size$n, 1/7) 
+  test_outcome <- t.test(sampled_data, mu = 5, alternative = "two.sided")
+  test_outcome$p.value <= 0.05
+})
+
+power_estimate <- mean(simulated_results)
+p_value_counts <- table(simulated_results)
+print(p_value_counts)
+print(sprintf("Estimated power: %.3f", power_estimate))
+
+```
