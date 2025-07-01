@@ -1,0 +1,132 @@
+---
+title: "STAC33Assignment5"
+author: ""
+format: html
+editor: visual
+---
+
+## **1 Admissions to UC Berkeley**
+
+The data found [here](https://ritsokiguess.site/datafiles/berkeley.txt) represents the number of males/females admitted and rejected to UC Berkeley for various departments.
+
+In the data set, you will find the following variables:
+
+-   `Dept` departments at UC Berkeley
+
+-   `Males:admitted` number of males admitted to UC Berkeley for the corresponding department
+
+-   `Males:rejected` number of males rejected to UC Berkeley for the corresponding department
+
+-   `Females:admitted` number of females admitted to UC Berkeley for the corresponding department
+
+-   `Females:rejected` number of females rejected to UC Berkeley for the corresponding department
+
+##### **a. (2 marks) Read in and display the data.**
+
+```{r}
+library(tidyverse)
+Admissions <- read_table("https://ritsokiguess.site/datafiles/berkeley.txt")
+Admissions
+```
+
+##### **b. (3 marks) The following [link](https://r4ds.had.co.nz/tidy-data.html) provides an overview of what tidy data is: *variables are in columns, observations are in rows, and values are in cells*. Why is the above data not considered tidy? Create a tidy version of this data set in as few steps as possible.**
+
+Because the column names contains two variables ( gender and admission outcome). In tidy data, each variable should be in its own column, each observation in its own row.
+
+```{r}
+Admissions_tidy <- Admissions %>%
+  pivot_longer(
+    cols = contains("admitted") | contains("rejected"),
+    names_to = c("Gender","Admission"),
+    names_sep = ":",
+    values_to = "Students"
+  )
+Admissions_tidy
+```
+
+##### **c. (3 marks) Create an appropriate plot of the number of individuals admitted or rejected from UC Berkeley for each gender. *Think carefully about what categorical variable makes more sense to be along the x-axis*. Comment on the plot.**
+
+```{r}
+ggplot(data = Admissions_tidy, mapping = aes(fill = Admission, x = Gender, y = Students)) +
+  geom_col(width = 0.6) +
+  labs(title = "UC Berkeley Admissions by Gender",
+       x = "Gender",
+       y = "Number of Students") +
+  theme_minimal()
+```
+
+##### **d. (2 marks) Create a column, titled `Prop`, that represents the proportion of individuals rejected or admitted to each department among each gender. *For example, among males who applied to `Dept` A, what’s the proportion of males who were accepted, and males who were rejected.***
+
+```{r}
+library(dplyr)
+
+admissions_with_prop <- Admissions_tidy %>%
+  group_by(Dept, Gender) %>%
+  mutate(total = sum(Students)) %>%
+  ungroup() %>%
+  mutate(Prop = Students / total) %>%
+  select(-total)
+
+admissions_with_prop
+```
+
+##### **e. (4 marks) Create an appropriate plot of the proportion of individuals admitted or rejected from UC Berkeley for each gender. If we are interested in finding out if there is a gender disparity in the acceptance process for UC Berkeley, which graph (or alternatively, which variable `Prop` or `Count`) would be more appropriate here? Explain why.**
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+Admissions_tidy %>%
+  group_by(Gender, Admission) %>%
+  summarise(Students = sum(Students), .groups = "drop") %>%
+  group_by(Gender) %>%
+  mutate(Total = sum(Students),
+         Prop = Students / Total) %>%
+  ggplot(aes(fill = Admission, x = Gender, y = Prop)) +
+  geom_col(width = 0.7) +
+  labs(title = "Proportion of Admission Outcomes by Gender",
+       y = "Proportion",
+       x = "Gender") +
+  theme_classic()
+```
+
+The total number of male and female applicants is no the same, so comparing raw counts would be misleading. And using proportions allows us to use the likelihood of admission within each gender, which is good for identifying potential gender disparities in the admission. We could know data from the comparison of Prop for difference among gender.
+
+##### **f. (2 marks) Using `pivot_wider`, recreate the original data frame using the data frame you created in b.**
+
+```{r}
+library(tidyr)
+
+Admissions_tidy %>%
+  pivot_wider(
+    id_cols = Dept,
+    values_from = Students,
+    names_from = c(Gender, Admission),
+    names_glue = "{Gender}:{Admission}"
+  )
+```
+
+## **2 Cognition tests**
+
+The data found [here](https://ritsokiguess.site/datafiles/cognition.txt) represents 18 cognition tests performed on 201 individuals.
+
+##### **a. (2 marks) Read in and display the data.**
+
+```{r}
+cognition_tests = read_table("https://ritsokiguess.site/datafiles/cognition.txt")
+cognition_tests
+```
+
+##### **b. (3 marks) Write code that would make this data tidier by having one column that represents the identifier for the cognition test, while (i) removing the character `c` from the unique identifiers and (ii) removing any `NA` values. *You may find it helpful to look at the `pivot_longer` help file in R.***
+
+```{r}
+cognition_tests %>%
+  pivot_longer(
+    cols = -id,  
+    names_to = "test",
+    values_to = "value",
+    values_drop_na = TRUE
+  ) %>%
+  mutate(test = gsub("^c", "", test))
+
+```

@@ -1,0 +1,102 @@
+---
+title: "STAC33Assignment4"
+author: ""
+format: html
+editor: visual
+---
+
+## **Assignment 4**
+
+###### **Due Date**
+
+Thursday, March 6 \@ 11:59pm
+
+## **Question 1**
+
+Coffee was poured into four different brands of travel mugs. The difference in temperature (in Fahrenheit) of the coffee was recorded after 1 hour. The data can be found [here](https://ritsokiguess.site/datafiles/coffee.txt).
+
+In the data set, you will find the following variables:
+
+-   `cup` travel mug brand
+
+-   `tempdiff` temperature difference of coffee after 1 hour in travel mug
+
+##### **a) (2 points) Read in and display the data.**
+
+```{r}
+library(tidyverse)
+myurl <- read_table("https://ritsokiguess.site/datafiles/coffee.txt")
+myurl
+```
+
+##### **b) (2 points) Make a suitable graph of the data.**
+
+```{r}
+ggplot(myurl,aes(x=cup, y=tempdiff,fill=cup))+
+  geom_boxplot()
+```
+
+##### **c) (2 points) Explain briefly why you would not be happy to run an ANOVA in this situation.**
+
+The temperature difference distributions for Nissan and Starbucks are right-skewed. Additionally, Nissan's temperature differences appear to have a smaller standard deviation.
+
+##### **d) (4 points) Discuss what test is appropriate here, and implement it. Summarize any results.**
+
+I don't think the distributions are not close enough so I choose to use Mood's median tests.
+
+```{r}
+library(tidyverse)
+library(smmr)
+library(PMCMRplus)
+
+median_test(myurl, tempdiff, cup)
+
+```
+
+```{r}
+pairwise_median_test(myurl, tempdiff, cup)
+```
+
+Since the p_value from median test is 0.003524286 and it is much lower than 0.05. We could reject the null hypothesis. This means at least one of the four groups has a temperature differences that stands out of the rest.
+
+The pairwise median test shows that Nissan travel mug performs significantly differently from the others. the test shows that CUPPS vs. Nissan, SIGG vs. Nissan and Nissan vs. Starbucks own the p_value less than 0.05. It is clear that the Nissan mug retain heat much better than the rest, making it the best choice for keeping coffee warm.
+
+##### **e) (3 points) Applying a square root transformation to `tempdiff` seems to fix the issue discussed in c). Run a suitable analysis of variance, and display the results. What do you conclude, in the context of the data?**
+
+```{r}
+myurl <- myurl %>%
+  mutate(sq= sqrt(tempdiff))
+  ggplot(data = myurl, mapping = aes(cup, sq, fill=cup)) +  
+  geom_boxplot(outlier.shape = 16) +  
+  ggtitle("Temperature Difference Across Cups (Transformed)") 
+
+
+```
+
+```{r}
+aaa <- aov(sq ~ cup, data = myurl)
+summary(aaa)
+```
+
+In conclusion, p_value obtained from the ANOVA test is 2.34e-6, which is significantly smaller than 0.05. This allows us to reject the null hypothesis, indicating that at least one of the four groups has a temperature difference that is different from the others.
+
+##### **f) (3 points) Are you justified in running Tukey’s method here? Explain briefly. If justified, run it, and interpret the results in the context of the data.**
+
+```{r}
+myurl %>%
+  group_by(cup) %>%
+  summarise(sd = sd(sq),  
+            mean = mean(sq),  
+            count = n()) 
+
+```
+
+```{r}
+TukeyHSD(aaa)
+```
+
+The pvalues for the comparisons between Nissan and CUPPS, Nissan and SIGG, and Nissan and Starbucks are all below 0.05, we can conclude that the Nissan group has a much lower mean than other three. This suggests that the Nissan travel mug is better than other groups at maintaining the heat.
+
+##### **g) (2 points) What travel mug would you recommend?**
+
+I would recommend Nissan travel mug.

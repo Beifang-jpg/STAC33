@@ -1,0 +1,160 @@
+---
+title: "STAC33Assignment2"
+author: ""
+format: html
+editor: visual
+---
+
+# **Assignment 2**
+
+## **Description of data**
+
+The `polyps_d` and `polyps_t` data sets found on Quercus (Files \> Data) are from a [study](https://www.nejm.org/doi/10.1056/NEJM199305063281805?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200www.ncbi.nlm.nih.gov) published in 1993 in the New England Journal of Medicine and modified from a data frame in the package [medicaldata](https://CRAN.R-project.org/package=medicaldata). There are 22 participants with a known genetic mutation that increases the risk of precancerous polyps of the colon at a young age. This study looked at whether a preventative therapy, sulindac, helped reduce the number of polyps.
+
+In the demographic data set, you will find the following variables:
+
+-   `id` subject id
+
+-   `sex`
+
+-   `age` in years
+
+In the treatment data set, you will find the following variables:
+
+-   `participant_id` subject id
+
+-   `baseline` number of polyps found at baseline (0 month) visit
+
+-   `treatment` sulindac or placebo
+
+-   `number3m` number of polyps found at 3 month visit
+
+-   `number6m` number of polyps found at 6 month visit
+
+## **Question 1**
+
+This question assesses your knowledge on reading in and displaying data.
+
+##### **a) (2 points) Read in and display the `polyps_d` data set.**
+
+```{r}
+library(tidyverse)
+polyps_d <- read_tsv("C:/STAC33Data/polyps_d.txt")
+polyps_d
+```
+
+```{r}
+summary(polyps_d)
+```
+
+##### **b) (2 points) Read in and display the `polyps_t` data set.**
+
+```{r}
+polyp_t <- read_csv("C:/STAC33Data/polyps_t.csv")
+polyp_t
+
+```
+
+```{r}
+summary(polyp_t)
+```
+
+## **Question 2**
+
+These questions assess your knowledge on selecting, arranging and mutating data.
+
+##### **a) (3 points) Join the two data frames, only including rows that are in both data frames, and display the data. Use this data for the rest of the assignment questions.**
+
+```{r}
+dat <- polyp_t %>%
+  inner_join(polyps_d, by=join_by(participant_id==id))
+
+```
+
+##### **b) (3 points) In the 5 patients who had the highest number of polyps at the 12 month follow-up, display *only* their treatment, sex, and age.**
+
+```{r}
+library(dplyr)
+dat %>%
+  arrange(desc(number12m)) %>%
+  head(5) %>%
+  select(treatment, sex, age)
+
+```
+
+##### **c) (2 points) Display which males, who recieved treatment, that had an age greater than 21.**
+
+```{r}
+subset(dat, sex == "male" & treatment == "sulindac" & age > 21)
+```
+
+## **Question 3**
+
+These questions assess your knowledge on summarizing data. For this section, in addition to displaying the results (as a data frame for instance), write out the results in sentences.
+
+##### **a) (2 points) What is the median, and IQR, for the number of polyps found at baseline?**
+
+```{r}
+AAA <- summary(dat$baseline)
+#median
+print(as.numeric(AAA[3]))
+
+#IQR
+IQR_base <- as.numeric(AAA[5] - AAA[2])
+IQR_base
+```
+
+The median for the number of polyps found at baseline is 20. The IQR for the numbers of polyps found at baseline is 23.5.
+
+##### **b) (3 points) What is the mean number of polyps found at 3 months since baseline for each treatment group? Without running any statistical tests, what can you infer about the effect of Sulindac?**
+
+```{r}
+#Sulindac
+sul_data <- dat %>% filter(treatment == "sulindac")
+sul_mean_3m <- mean(sul_data$number3m, na.rm = TRUE)  
+print(sul_mean_3m)
+
+#Placebo 
+pla_data <- dat %>% filter(treatment == "placebo")
+pla_mean_3m <- mean(pla_data$number3m, na.rm = TRUE)  
+print(pla_mean_3m)
+```
+
+The mean of polyps found at 3 months since baseline for placebo is 55.81818. The mean of polyps found at 3 months since baseline for Sulindac is 23.88889. It can be inferred that Sulinac is more effective in reducing polyps.
+
+##### **c) (3 points) What is the median number of polyps, and corresponding IQR, found at 12 months since baseline for each treatment group and sex? Without running any statistical tests, what can you infer about the effect of Sulindac?**
+
+```{r}
+# Sulindac Male
+sul_male <- dat %>% filter(treatment == "sulindac" & sex == "male")
+sul_male_median <- median(sul_male$number12m, na.rm = TRUE)
+sul_male_IQR <- IQR(sul_male$number12m, na.rm = TRUE)
+
+# Sulindac Female
+sul_female <- dat %>% filter(treatment == "sulindac" & sex == "female")
+sul_female_median <- median(sul_female$number12m, na.rm = TRUE)
+sul_female_IQR <- IQR(sul_female$number12m, na.rm = TRUE)
+
+# Placebo Male
+pla_male <- dat %>% filter(treatment == "placebo" & sex == "male")
+pla_male_median <- median(pla_male$number12m, na.rm = TRUE)
+pla_male_IQR <- IQR(pla_male$number12m, na.rm = TRUE)
+
+# Placebo Female
+pla_female <- dat %>% filter(treatment == "placebo" & sex == "female")
+pla_female_median <- median(pla_female$number12m, na.rm = TRUE)
+pla_female_IQR <- IQR(pla_female$number12m, na.rm = TRUE)
+
+print(paste("Sulindac Male Median:", sul_male_median))
+print(paste("Sulindac Male IQR:", sul_male_IQR))
+print(paste("Sulindac Female Median:", sul_female_median))
+print(paste("Sulindac Female IQR:", sul_female_IQR))
+print(paste("Placebo Male Median:", pla_male_median))
+print(paste("Placebo Male IQR:", pla_male_IQR))
+print(paste("Placebo Female Median:", pla_female_median))
+print(paste("Placebo Female IQR:", pla_female_IQR))
+```
+
+The median of polyps found at 12 months for females received placebo is 53.5 and the IQR is 20. On the other hand, the median of polyps found at 12 months for males received placebo is 28 and the IQR is 29.5. The median of polyps found at 12 months for females received sulindac is 2 and the IQR is 2. On the other hand, the median of polyps found at 12 months for males received sulindac is 17 and the IQR is 21.
+
+Therefore, we could infer that sulindac significantly reduce more polyps than placebo. And we could also infer that sulindac is more effective for female rather than man.
